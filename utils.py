@@ -26,6 +26,18 @@ from .components import SphericalComponent, UniversalComponent, HyperbolicCompon
 from .sampling import WrappedNormalProcedure, EuclideanNormalProcedure, EuclideanConstantProcedure
 from .sampling import UniversalSamplingProcedure
 # from .sampling import SphericalVmfProcedure, ProjectedSphericalVmfProcedure, RiemannianNormalProcedure
+import argparse
+
+
+def str2bool(v: str) -> bool:
+    v = v.lower()
+    if v == "true":
+        return True
+    elif v == "false":
+        return False
+    else:
+        raise argparse.ArgumentTypeError(f"Boolean value expected, got '{v}'.")
+
 
 space_creator_map = {
     "h": HyperbolicComponent,

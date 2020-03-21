@@ -21,7 +21,7 @@ import torch.nn as nn
 from torch import Tensor
 from torch.distributions import Distribution
 
-from ...data import VaeDataset
+from mvae.data import VaeDataset
 from ..stats import BatchStats, BatchStatsFloat
 from ..components import Component
 
