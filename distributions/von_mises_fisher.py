@@ -120,7 +120,7 @@ class VonMisesFisher(torch.distributions.Distribution, VaeDistribution):
             t = (2 * a * b) / (1 - (1 - b) * e_)
 
             accept = ((self.p - 1) * t.log() - t + d) > torch.log(u)
-            reject = 1 - accept
+            reject = ~accept
 
             w[bool_mask * accept] = w_[bool_mask * accept]
             e[bool_mask * accept] = e_[bool_mask * accept]
