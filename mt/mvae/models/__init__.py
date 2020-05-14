@@ -13,12 +13,12 @@
 # limitations under the License.
 # ==============================================================================
 
+from .train import Trainer
+from .ffnn_vae import FeedForwardVAE
+from .conv_vae import ConvolutionalVAE
+
 __all__ = [
-    "ops",
-    "distributions",
-    "models",
-    "sampling",
-    "components",
-    "mt",
-    "visualization"
+    "ConvolutionalVAE",
+    "FeedForwardVAE",
+    "Trainer",
 ]

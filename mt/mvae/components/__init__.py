@@ -13,12 +13,19 @@
 # limitations under the License.
 # ==============================================================================
 
+from .component import Component
+from .component import EuclideanComponent, ConstantComponent
+from .component import HyperbolicComponent, PoincareComponent
+from .component import SphericalComponent, StereographicallyProjectedSphereComponent
+from .component import UniversalComponent
+
 __all__ = [
-    "ops",
-    "distributions",
-    "models",
-    "sampling",
-    "components",
-    "mt",
-    "visualization"
+    "Component",
+    "EuclideanComponent",
+    "SphericalComponent",
+    "HyperbolicComponent",
+    "ConstantComponent",
+    "PoincareComponent",
+    "UniversalComponent",
+    "StereographicallyProjectedSphereComponent",
 ]
