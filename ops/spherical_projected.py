@@ -189,7 +189,8 @@ def inverse_sample_projection_mu0(x_proj: Tensor, at_point: Tensor, radius: Tens
 
 
 def projected_to_spherical(y: Tensor, radius: Tensor) -> Tensor:
-    yn2 = torch.norm(y, p=2, dim=-1, keepdim=True)**2
+    # yn2 = torch.norm(y, p=2, dim=-1, keepdim=True)**2
+    yn2 = torch.sum(y.abs()**2, dim=-1, keepdim=True)
     r2 = radius * radius
     res = torch.cat((radius * (r2 - yn2), 2 * r2 * y), dim=-1) / (yn2 + r2)
     assert torch.isfinite(res).all()
