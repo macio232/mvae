@@ -63,7 +63,7 @@ def main() -> None:
     parser.add_argument("--beta_end_epoch", type=int, default=1, help="Beta-VAE end epoch (0 to epochs-1).")
     parser.add_argument("--likelihood_n",
                         type=int,
-                        default=500,
+                        default=10,
                         help="How many samples to use for LL estimation. Value 0 disables LL estimation.")
     args = parser.parse_args()
 
@@ -138,7 +138,7 @@ def main() -> None:
                              eval_data=test_loader,
                              epochs=10,
                              betas=betas,
-                             likelihood_n=0)
+                             likelihood_n=args.likelihood_n)
 
         # ... then unfix it:
         for component in model.components:
@@ -166,4 +166,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     # with torch.autograd.set_detect_anomaly(True):
+    #     main()
     main()
