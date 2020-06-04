@@ -115,7 +115,7 @@ class Trainer:
         # Warmup
         for _ in range(warmup):
             beta = self.get_beta(betas)
-            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta)
+            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=likelihood_n)
             self._update_checkpoints(lookahead)
             self.epoch += 1
 
@@ -123,7 +123,7 @@ class Trainer:
         stop_epoch = None
         for _ in range(warmup, max_epochs):
             beta = self.get_beta(betas)
-            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta)
+            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=likelihood_n)
 
             stop_epoch = Trainer._should_stop(train_results, self.stats.epoch, lookahead, max_epoch=max_epochs - 1)
             self._update_checkpoints(lookahead)
@@ -159,7 +159,7 @@ class Trainer:
         test_results = dict()
         for _ in range(epochs):
             beta = self.get_beta(betas)
-            self._train_epoch(optimizer, train_data, beta=beta)
+            self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=likelihood_n)
             self.epoch += 1
 
         with torch.set_grad_enabled(False):
@@ -172,7 +172,7 @@ class Trainer:
         # self._export_representations(eval_data, mode="test")
         return test_results
 
-    def _train_epoch(self, optimizer: torch.optim.Optimizer, train_data: DataLoader, beta: float) -> EpochStats:
+    def _train_epoch(self, optimizer: torch.optim.Optimizer, train_data: DataLoader, beta: float, likelihood_n: int=0) -> EpochStats:
         print(f"\tTrainEpoch {self.epoch}:\t", end="")
         self.model.train()
 
@@ -185,7 +185,7 @@ class Trainer:
 
         batch_stats = []
         for x_mb, y_mb in train_data:
-            stats, (reparametrized, _, _) = self.model.train_step(optimizer, x_mb, beta=beta)
+            stats, (reparametrized, _, _) = self.model.train_step(optimizer, x_mb, beta=beta, likelihood_n=likelihood_n)
 
             if self.stats.train_statistics:
                 stats.summaries(self.stats, prefix="train/batch")
@@ -210,7 +210,7 @@ class Trainer:
         return epoch_stats
 
     def _test_epoch(self, test_data: DataLoader, likelihood_n: int, beta: float) -> EpochStats:
-        print(f"\tEpoch {self.epoch}:\t", end="")
+        print(f"\tTestEpoch {self.epoch}:\t", end="")
         self.model.eval()
 
         show_embeddings = self.stats.show_embeddings is not None and (self.epoch + 1) % self.stats.show_embeddings == 0
