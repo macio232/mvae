@@ -44,7 +44,7 @@ def main() -> None:
         default=False,
         help="Use a spheric covariance matrix (single scalar) if true, or elliptic (diagonal covariance matrix) if "
         "false.")
-    parser.add_argument("--doubles", type=str2bool, default=True, help="Use float32 or float64. Default float32.")
+    parser.add_argument("--doubles", type=str2bool, default=True, help="Use float32 or float64. Default float64.")
     parser.add_argument("--likelihood_n",
                         type=int,
                         default=500,

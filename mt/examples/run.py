@@ -57,7 +57,7 @@ def main() -> None:
                         type=str2bool,
                         default=True,
                         help="Whether to fix curvatures to (-1, 0, 1).")
-    parser.add_argument("--doubles", type=str2bool, default=True, help="Use float32 or float64. Default float32.")
+    parser.add_argument("--doubles", type=str2bool, default=True, help="Use float32 or float64. Default float64.")
     parser.add_argument("--beta_start", type=float, default=1.0, help="Beta-VAE beginning value.")
     parser.add_argument("--beta_end", type=float, default=1.0, help="Beta-VAE end value.")
     parser.add_argument("--beta_end_epoch", type=int, default=1, help="Beta-VAE end epoch (0 to epochs-1).")
