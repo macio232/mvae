@@ -115,28 +115,28 @@ class Trainer:
         # Warmup
         for _ in range(warmup):
             beta = self.get_beta(betas)
-            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=likelihood_n)
+            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=0)
             self._update_checkpoints(lookahead)
-            with torch.set_grad_enabled(False):
-                test_results[self.epoch] = self._test_epoch(eval_data,
-                                                            likelihood_n=likelihood_n,
-                                                            beta=self.get_beta(
-                                                                betas))
+            # with torch.set_grad_enabled(False):
+            #     test_results[self.epoch] = self._test_epoch(eval_data,
+            #                                                 likelihood_n=likelihood_n,
+            #                                                 beta=self.get_beta(
+            #                                                     betas))
             self.epoch += 1
 
         # Early stopping active
         stop_epoch = None
         for _ in range(warmup, max_epochs):
             beta = self.get_beta(betas)
-            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=likelihood_n)
+            train_results[self.epoch] = self._train_epoch(optimizer, train_data, beta=beta, likelihood_n=0)
 
             stop_epoch = Trainer._should_stop(train_results, self.stats.epoch, lookahead, max_epoch=max_epochs - 1)
             self._update_checkpoints(lookahead)
-            with torch.set_grad_enabled(False):
-                test_results[self.epoch] = self._test_epoch(eval_data,
-                                                            likelihood_n=likelihood_n,
-                                                            beta=self.get_beta(
-                                                                betas))
+            # with torch.set_grad_enabled(False):
+            #     test_results[self.epoch] = self._test_epoch(eval_data,
+            #                                                 likelihood_n=likelihood_n,
+            #                                                 beta=self.get_beta(
+            #                                                     betas))
             if stop_epoch:
                 break
             self.epoch += 1
@@ -152,6 +152,13 @@ class Trainer:
             self._delete_epoch(epoch)
         for epoch in range(last_epoch - lookahead, stop_epoch):
             self._delete_epoch(epoch)
+
+        self.model = self.model.to(torch.device('cpu'))
+        with torch.set_grad_enabled(False):
+            test_results[self.epoch] = self._test_epoch(eval_data,
+                                                        likelihood_n=likelihood_n,
+                                                        beta=self.get_beta(
+                                                            betas))
 
         # self._export_representations(train_data, mode="train")
         # self._export_representations(eval_data, mode="test")
