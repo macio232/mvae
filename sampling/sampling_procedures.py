@@ -49,6 +49,12 @@ class SamplingProcedure(Generic[Q, P]):
         log_p_z_ = p_z.log_prob(z)
         return z, log_q_z_x_, log_p_z_
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}"
+
 
 class SphericalVmfProcedure(SamplingProcedure[RadiusVonMisesFisher, HypersphericalUniform]):
 
