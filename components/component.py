@@ -84,7 +84,7 @@ class Component(torch.nn.Module):
         return self.__repr__()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(R^{self.dim})"
+        return self.__class__.__name__
 
     def _shortcut(self) -> str:
         return f"{self.__class__.__name__.lower()[0]}{self.true_dim}"
