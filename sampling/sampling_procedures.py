@@ -55,6 +55,9 @@ class SamplingProcedure(Generic[Q, P]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
+    def prior(self, shape, device):
+        raise NotImplementedError
+
 
 class SphericalVmfProcedure(SamplingProcedure[RadiusVonMisesFisher, HypersphericalUniform]):
 
@@ -72,6 +75,9 @@ class SphericalVmfProcedure(SamplingProcedure[RadiusVonMisesFisher, Hyperspheric
         # True dim, not ambient space dim:
         p_z = HypersphericalUniform(z_mean.shape[-1] - 1, device=z_mean.device)
         return q_z, p_z
+
+    def prior(self, shape, device):
+        return HypersphericalUniform(shape.shape[-1] - 1, device=device)
 
 
 class ProjectedSphericalVmfProcedure(SamplingProcedure[RadiusProjectedVonMisesFisher, HypersphericalUniform]):
@@ -93,6 +99,9 @@ class ProjectedSphericalVmfProcedure(SamplingProcedure[RadiusProjectedVonMisesFi
         p_z = HypersphericalUniform(z_mean_h.shape[-1] - 1, device=z_mean.device)
         return q_z, p_z
 
+    def prior(self, shape, device):
+        return HypersphericalUniform(shape.shape[-1] - 1, device=device)
+
 
 class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
 
@@ -103,6 +112,11 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
         std_0 = torch.ones_like(std, device=z_mean.device)
         p_z = WrappedNormal(mu_0, std_0, manifold=self._manifold)
         return q_z, p_z
+
+    def prior(self, shape, device):
+        mu_0 = self._manifold.mu_0(shape, device=device)
+        std_0 = torch.ones((*shape[:-1], 1), device=device)
+        return WrappedNormal(mu_0, std_0, manifold=self._manifold)
 
     def kl_loss(self, q_z: WrappedNormal, p_z: WrappedNormal, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         logqz, logpz = self._log_prob(q_z, p_z, z, data)
@@ -143,6 +157,9 @@ class EuclideanConstantProcedure(SamplingProcedure[EuclideanUniform, EuclideanUn
         diff = self.eps * std
         return EuclideanUniform(pt - diff, pt + diff), EuclideanUniform(self.const - self.eps, self.const + self.eps)
 
+    def prior(self, shape, device):
+        return EuclideanUniform(self.const - self.eps, self.const + self.eps)
+
     def kl_loss(self, q_z: EuclideanUniform, p_z: EuclideanUniform, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         res = super().kl_loss(q_z, p_z, z, data)
         return res.sum(dim=-1)
@@ -155,6 +172,12 @@ class EuclideanNormalProcedure(SamplingProcedure[EuclideanNormal, EuclideanNorma
         p_z = EuclideanNormal(torch.zeros_like(z_mean, device=z_mean.device), torch.ones_like(std,
                                                                                               device=z_mean.device))
         return q_z, p_z
+
+    def prior(self, shape, device):
+        return EuclideanNormal(
+            torch.zeros(shape, device=device),
+            torch.ones((*shape[:-1], 1), device=device)
+        )
 
     def kl_loss(self, q_z: EuclideanNormal, p_z: EuclideanNormal, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         res = super().kl_loss(q_z, p_z, z, data)
@@ -180,6 +203,11 @@ class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNo
         p_z = RiemannianNormal(mu_0, std_0, manifold=self._manifold)
         return q_z, p_z
 
+    def prior(self, shape, device):
+        mu_0 = self._manifold.mu_0(shape, device=device)
+        std_0 = torch.ones((*shape[:-1], 1), device=device)
+        return RiemannianNormal(mu_0, std_0, manifold=self._manifold)
+
     def kl_loss(self, q_z: RiemannianNormal, p_z: RiemannianNormal, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         logqz = q_z.log_prob(z)
         logpz = p_z.log_prob(z)
@@ -204,6 +232,9 @@ class UniversalSamplingProcedure(SamplingProcedure[Q, P]):
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[Q, P]:
         return self.sampling_procedure.reparametrize(z_mean, std)
+
+    def prior(self, shape, device):
+        return self._sampling_procedures[self._manifold._choice].prior(shape, device)
 
     def kl_loss(self, q_z: Q, p_z: P, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         return self.sampling_procedure.kl_loss(q_z, p_z, z, data)
