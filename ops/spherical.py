@@ -72,7 +72,7 @@ def mu_0(shape: torch.Size, radius: Tensor, **kwargs: Any) -> Tensor:
 
 
 def parallel_transport_mu0(v: Tensor, dst: Tensor, radius: Tensor) -> Tensor:
-    coef = torch.sum(dst * v, dim=-1, keepdim=True) / (radius * (radius + dst[..., 0:1]))
+    coef = torch.sum(dst * v, dim=-1, keepdim=True) / (radius * (radius + dst[..., 0:1]).clamp(min=1e-7))
     right = torch.cat((dst[..., 0:1] + radius, dst[..., 1:]), dim=-1)
     return v - coef * right
 
@@ -103,7 +103,7 @@ def exp_map_mu0(x: Tensor, radius: Tensor) -> Tensor:
 
 def inverse_exp_map(x: Tensor, at_point: Tensor, radius: Tensor) -> Tensor:
     alpha = torch.sum(at_point * x, dim=-1, keepdim=True) / (radius**2)
-    coef = torch.acos(torch.clamp(alpha, min=-1., max=1.)) / sqrt(1. - alpha**2)
+    coef = torch.acos(torch.clamp(alpha, min=-1.+1e-7, max=1.-1e-7)) / sqrt(1. - alpha**2)
     ret = coef * (x - alpha * at_point)
     assert torch.isfinite(ret).all()
     return ret
