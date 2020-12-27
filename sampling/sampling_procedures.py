@@ -30,7 +30,8 @@ P = TypeVar('P', bound=Distribution)
 
 class SamplingProcedure(Generic[Q, P]):
 
-    def __init__(self, manifold: Manifold, scalar_parametrization: bool) -> None:
+    def __init__(self, component, manifold: Manifold, scalar_parametrization: bool) -> None:
+        self._component = component
         self._manifold = manifold
         self._scalar_parametrization = scalar_parametrization
 
@@ -61,10 +62,10 @@ class SamplingProcedure(Generic[Q, P]):
 
 class SphericalVmfProcedure(SamplingProcedure[RadiusVonMisesFisher, HypersphericalUniform]):
 
-    def __init__(self, manifold: Manifold, scalar_parametrization: bool) -> None:
+    def __init__(self, component, manifold: Manifold, scalar_parametrization: bool) -> None:
         if not scalar_parametrization:
             raise ValueError("Spherical VMF only works with scalar scale.")
-        super().__init__(manifold, scalar_parametrization)
+        super().__init__(component, manifold, scalar_parametrization)
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[RadiusVonMisesFisher, HypersphericalUniform]:
         if std.size(-1) > 1:
@@ -82,10 +83,10 @@ class SphericalVmfProcedure(SamplingProcedure[RadiusVonMisesFisher, Hyperspheric
 
 class ProjectedSphericalVmfProcedure(SamplingProcedure[RadiusProjectedVonMisesFisher, HypersphericalUniform]):
 
-    def __init__(self, manifold: Manifold, scalar_parametrization: bool) -> None:
+    def __init__(self, component,  manifold: Manifold, scalar_parametrization: bool) -> None:
         if not scalar_parametrization:
             raise ValueError("Projected spherical VMF only works with scalar scale.")
-        super().__init__(manifold, scalar_parametrization)
+        super().__init__(component, manifold, scalar_parametrization)
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[RadiusProjectedVonMisesFisher, HypersphericalUniform]:
         if std.size(-1) > 1:
@@ -105,18 +106,32 @@ class ProjectedSphericalVmfProcedure(SamplingProcedure[RadiusProjectedVonMisesFi
 
 class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
 
+    def __init__(self, component, manifold: Manifold, scalar_parametrization: bool) -> None:
+        super().__init__(component, manifold, scalar_parametrization)
+        self._component._mu_0 = torch.nn.Parameter(
+            self._manifold.exp_map_mu0(torch.rand((1, self._component.true_dim))),
+            requires_grad=True
+        )
+        if scalar_parametrization:
+            self._component._std_0 = torch.nn.Parameter(torch.rand((1, 1)).sqrt(), requires_grad=True)
+        else:
+            self._component._std_0 = torch.nn.Parameter(torch.rand((1, self._component.true_dim)).sqrt(), requires_grad=True)
+
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[WrappedNormal, WrappedNormal]:
         q_z = WrappedNormal(z_mean, std, manifold=self._manifold)
-
-        mu_0 = self._manifold.mu_0(z_mean.shape, device=z_mean.device)
-        std_0 = torch.ones_like(std, device=z_mean.device)
-        p_z = WrappedNormal(mu_0, std_0, manifold=self._manifold)
+        p_z = WrappedNormal(
+            self._component._mu_0.expand_as(z_mean),
+            self._component._std_0.expand_as(std),
+            manifold=self._manifold
+        )
         return q_z, p_z
 
     def prior(self, shape, device):
-        mu_0 = self._manifold.mu_0(shape, device=device)
-        std_0 = torch.ones((*shape[:-1], 1), device=device)
-        return WrappedNormal(mu_0, std_0, manifold=self._manifold)
+        return WrappedNormal(
+            self._component._mu_0.expand(shape),
+            self._component._std_0.expand(*shape[:-1], -1),
+            manifold=self._manifold
+        )
 
     def kl_loss(self, q_z: WrappedNormal, p_z: WrappedNormal, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         logqz, logpz = self._log_prob(q_z, p_z, z, data)
@@ -139,12 +154,13 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
 class EuclideanConstantProcedure(SamplingProcedure[EuclideanUniform, EuclideanUniform]):
 
     def __init__(self,
+                 component,
                  manifold: Manifold,
                  scalar_parametrization: bool,
                  dim: int,
                  const: Optional[torch.Tensor] = None,
                  eps: Optional[torch.Tensor] = None) -> None:
-        super().__init__(manifold, scalar_parametrization)
+        super().__init__(component, manifold, scalar_parametrization)
         if const is None:
             const = torch.zeros(dim)
         self.const = const
@@ -167,29 +183,48 @@ class EuclideanConstantProcedure(SamplingProcedure[EuclideanUniform, EuclideanUn
 
 class EuclideanNormalProcedure(SamplingProcedure[EuclideanNormal, EuclideanNormal]):
 
+    def __init__(self, component, manifold: Manifold, scalar_parametrization: bool) -> None:
+        super().__init__(component, manifold, scalar_parametrization)
+        self._component._mu_0 = torch.nn.Parameter(
+            torch.rand((1, self._component.true_dim)),
+            requires_grad=True
+        )
+        if scalar_parametrization:
+            self._component._std_0 = torch.nn.Parameter(torch.rand((1, 1)).sqrt(), requires_grad=True)
+        else:
+            self._component._std_0 = torch.nn.Parameter(torch.rand((1, self._component.true_dim)).sqrt(), requires_grad=True)
+
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[EuclideanNormal, EuclideanNormal]:
         q_z = EuclideanNormal(z_mean, std)
-        p_z = EuclideanNormal(torch.zeros_like(z_mean, device=z_mean.device), torch.ones_like(std,
-                                                                                              device=z_mean.device))
+        p_z = EuclideanNormal(self._component._mu_0.expand_as(z_mean), self._component._std_0.expand_as(std))
         return q_z, p_z
 
     def prior(self, shape, device):
         return EuclideanNormal(
-            torch.zeros(shape, device=device),
-            torch.ones((*shape[:-1], 1), device=device)
+            self._component._mu_0.expand(shape),
+            self._component._std_0.expand(*shape[:-1], -1)
         )
 
     def kl_loss(self, q_z: EuclideanNormal, p_z: EuclideanNormal, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
-        res = super().kl_loss(q_z, p_z, z, data)
-        return res.sum(dim=-1)
+        # res = super().kl_loss(q_z, p_z, z, data)
+        log_var_q = torch.nn.Softplus(beta=0.5)(torch.pow(q_z.stddev, 2))
+        log_var_p = torch.nn.Softplus(beta=0.5)(torch.pow(p_z.stddev, 2))
+        res1 = 0.5 * (log_var_p - log_var_q  # log s_p,i^2 / s_q_i^2
+               + torch.exp(log_var_q) / torch.exp(
+                    log_var_p)  # s_q_i^2 / s_p_i^2
+               + torch.pow(q_z.mean - p_z.mean, 2) / torch.exp(
+                    log_var_p)  # (m_p_i - m_q_i)^2 / s_p_i^2
+               - 1)
+        # return res.sum(dim=-1)
+        return res1.sum(dim=-1)
 
 
 class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNormal]):
 
-    def __init__(self, manifold: Manifold, scalar_parametrization: bool) -> None:
+    def __init__(self, component,  manifold: Manifold, scalar_parametrization: bool) -> None:
         if not scalar_parametrization:
             raise ValueError("Riemannian Normal only works with scalar scale.")
-        super().__init__(manifold, scalar_parametrization)
+        super().__init__(component, manifold, scalar_parametrization)
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[RiemannianNormal, RiemannianNormal]:
         if std.size(-1) > 1:
@@ -217,8 +252,8 @@ class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNo
 
 class UniversalSamplingProcedure(SamplingProcedure[Q, P]):
 
-    def __init__(self, manifold: Manifold, scalar_parametrization: bool) -> None:
-        super().__init__(manifold, scalar_parametrization)
+    def __init__(self, component,  manifold: Manifold, scalar_parametrization: bool) -> None:
+        super().__init__(component, manifold, scalar_parametrization)
         self._manifold = manifold
         self._sampling_procedures = {
             -1: WrappedNormalProcedure(self._manifold._manifolds[-1], scalar_parametrization),

@@ -47,14 +47,20 @@ class Component(torch.nn.Module):
 
     def init_layers(self, in_dim: int, scalar_parametrization: bool) -> None:
         self.manifold = self.create_manifold()
-        self.sampling_procedure = self._sampling_procedure_type(self.manifold, scalar_parametrization)
+        self.sampling_procedure = self._sampling_procedure_type(self, self.manifold, scalar_parametrization)
 
         self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
 
         if scalar_parametrization:
-            self.fc_logvar = torch.nn.Linear(in_dim, 1)
+            self.fc_logvar = torch.nn.Sequential(
+                torch.nn.Linear(in_dim, 1),
+                # torch.nn.Hardtanh(min_val=-6., max_val=2.),
+            )
         else:
-            self.fc_logvar = torch.nn.Linear(in_dim, self.true_dim)
+            self.fc_logvar = torch.nn.Sequential(
+                torch.nn.Linear(in_dim, self.true_dim),
+                # torch.nn.Hardtanh(min_val=-6., max_val=2.),
+            )
 
     @property
     def device(self) -> torch.device:
@@ -70,12 +76,13 @@ class Component(torch.nn.Module):
         assert torch.isfinite(z_logvar).all()
         # +eps prevents collapse
         std = F.softplus(z_logvar) + 1e-5
+        # std = z_logvar.exp().sqrt() # why not this?
         # std = std / (self.manifold.radius**self.true_dim)  # TODO: Incorporate radius for (P)VMF
         assert torch.isfinite(std).all()
         return z_mean_h, std
 
-    def reparametrize(self, z_mean: Tensor, z_logvar: Tensor) -> Tuple[Q, P]:
-        return self.sampling_procedure.reparametrize(z_mean, z_logvar)
+    def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[Q, P]:
+        return self.sampling_procedure.reparametrize(z_mean, std)
 
     def kl_loss(self, q_z: Q, p_z: P, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
         return self.sampling_procedure.kl_loss(q_z, p_z, z, data)
