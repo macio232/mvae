@@ -109,7 +109,7 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
     def __init__(self, component, manifold: Manifold, scalar_parametrization: bool) -> None:
         super().__init__(component, manifold, scalar_parametrization)
         self._component._mu_0 = torch.nn.Parameter(
-            self._manifold.exp_map_mu0(torch.rand((1, self._component.true_dim))),
+            torch.rand((1, self._component.true_dim)),
             requires_grad=True
         )
         if scalar_parametrization:
@@ -120,7 +120,7 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[WrappedNormal, WrappedNormal]:
         q_z = WrappedNormal(z_mean, std, manifold=self._manifold)
         p_z = WrappedNormal(
-            self._component._mu_0.expand_as(z_mean),
+            self._manifold.exp_map_mu0(self._component._mu_0).expand_as(z_mean),
             self._component._std_0.expand_as(std),
             manifold=self._manifold
         )
@@ -128,7 +128,7 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
 
     def prior(self, shape, device):
         return WrappedNormal(
-            self._component._mu_0.expand(shape),
+            self._manifold.exp_map_mu0(self._component._mu_0).expand(shape),
             self._component._std_0.expand(*shape[:-1], -1),
             manifold=self._manifold
         )
