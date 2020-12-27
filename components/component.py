@@ -21,7 +21,7 @@ from torch.distributions import Distribution
 import torch.nn.functional as F
 
 from ..ops import Manifold, PoincareBall, Hyperboloid, Sphere, StereographicallyProjectedSphere, Euclidean, Universal
-from ..sampling import SamplingProcedure
+from ..sampling import SamplingProcedure, WrappedNormalProcedure, RiemannianNormalProcedure, EuclideanNormalProcedure
 
 Q = TypeVar('Q', bound=Distribution)
 P = TypeVar('P', bound=Distribution)
@@ -45,9 +45,19 @@ class Component(torch.nn.Module):
         self.fc_mean: torch.nn.Linear = None
         self.fc_logvar: torch.nn.Linear = None
 
-    def init_layers(self, in_dim: int, scalar_parametrization: bool) -> None:
+    def init_layers(self, in_dim: int, scalar_parametrization: bool, learn_prior: bool = False) -> None:
         self.manifold = self.create_manifold()
-        self.sampling_procedure = self._sampling_procedure_type(self, self.manifold, scalar_parametrization)
+        if learn_prior:
+            if not (
+                self._sampling_procedure_type == WrappedNormalProcedure or
+                self._sampling_procedure_type == RiemannianNormalProcedure or
+                self._sampling_procedure_type == EuclideanNormalProcedure
+            ):
+                raise ValueError(f"Can not learn prior for {self._sampling_procedure_type}")
+            else:
+                self.sampling_procedure = self._sampling_procedure_type(self, self.manifold, scalar_parametrization, learn_prior=True)
+        else:
+            self.sampling_procedure = self._sampling_procedure_type(self, self.manifold, scalar_parametrization)
 
         self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
 
