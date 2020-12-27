@@ -52,15 +52,17 @@ class Component(torch.nn.Module):
         self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
 
         if scalar_parametrization:
-            self.fc_logvar = torch.nn.Sequential(
-                torch.nn.Linear(in_dim, 1),
-                # torch.nn.Hardtanh(min_val=-6., max_val=2.),
-            )
+            # self.fc_logvar = torch.nn.Sequential(
+            #     torch.nn.Linear(in_dim, 1),
+            #     # torch.nn.Hardtanh(min_val=-6., max_val=2.),
+            # )
+            self.fc_logvar = torch.nn.Linear(in_dim, 1)
         else:
-            self.fc_logvar = torch.nn.Sequential(
-                torch.nn.Linear(in_dim, self.true_dim),
-                # torch.nn.Hardtanh(min_val=-6., max_val=2.),
-            )
+            # self.fc_logvar = torch.nn.Sequential(
+            #     torch.nn.Linear(in_dim, self.true_dim),
+            #     # torch.nn.Hardtanh(min_val=-6., max_val=2.),
+            # )
+            self.fc_logvar = torch.nn.Linear(in_dim, self.true_dim)
 
     @property
     def device(self) -> torch.device:
