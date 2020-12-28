@@ -34,6 +34,9 @@ class Euclidean(Manifold):
     def exp_map_mu0(self, x: Tensor) -> Tensor:
         return exp_map_mu0(x)
 
+    def exp_map(self, x: Tensor, at_point: Tensor) -> Tensor:
+        return exp_map(x, at_point=at_point)
+
     def inverse_exp_map_mu0(self, x: Tensor) -> Tensor:
         return inverse_exp_map_mu0(x)
 

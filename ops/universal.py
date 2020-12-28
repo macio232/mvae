@@ -38,6 +38,9 @@ class Universal(Manifold):
     def exp_map_mu0(self, x: Tensor) -> Tensor:
         return self.manifold.exp_map_mu0(x)
 
+    def exp_map(self, x: Tensor, at_point: Tensor) -> Tensor:
+        return self.manifold.exp_map(x, at_point=at_point)
+
     def inverse_exp_map_mu0(self, x: Tensor) -> Tensor:
         return self.manifold.inverse_exp_map_mu0(x)
 

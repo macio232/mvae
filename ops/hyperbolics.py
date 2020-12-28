@@ -28,6 +28,9 @@ class Hyperboloid(RadiusManifold):
     def exp_map_mu0(self, x: Tensor) -> Tensor:
         return exp_map_mu0(expand_proj_dims(x), radius=self.radius)
 
+    def exp_map(self, x: Tensor, at_point: Tensor) -> Tensor:
+        return exp_map(expand_proj_dims(x), at_point=at_point, radius=self.radius)
+
     def inverse_exp_map_mu0(self, x: Tensor) -> Tensor:
         return inverse_exp_map_mu0(x, radius=self.radius)
 

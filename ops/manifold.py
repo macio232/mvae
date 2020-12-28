@@ -47,6 +47,9 @@ class Manifold:
     def exp_map_mu0(self, x: Tensor) -> Tensor:
         raise NotImplementedError
 
+    def exp_map(self, x: Tensor, at_point: Tensor) -> Tensor:
+        raise NotImplementedError
+
     def inverse_exp_map_mu0(self, x: Tensor) -> Tensor:
         raise NotImplementedError
 
