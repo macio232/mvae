@@ -62,16 +62,8 @@ class Component(torch.nn.Module):
         self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
 
         if scalar_parametrization:
-            # self.fc_logvar = torch.nn.Sequential(
-            #     torch.nn.Linear(in_dim, 1),
-            #     # torch.nn.Hardtanh(min_val=-6., max_val=2.),
-            # )
             self.fc_logvar = torch.nn.Linear(in_dim, 1)
         else:
-            # self.fc_logvar = torch.nn.Sequential(
-            #     torch.nn.Linear(in_dim, self.true_dim),
-            #     # torch.nn.Hardtanh(min_val=-6., max_val=2.),
-            # )
             self.fc_logvar = torch.nn.Linear(in_dim, self.true_dim)
 
     @property
@@ -88,7 +80,6 @@ class Component(torch.nn.Module):
         assert torch.isfinite(z_logvar).all()
         # +eps prevents collapse
         std = F.softplus(z_logvar) + 1e-5
-        # std = z_logvar.exp().sqrt() # why not this?
         # std = std / (self.manifold.radius**self.true_dim)  # TODO: Incorporate radius for (P)VMF
         assert torch.isfinite(std).all()
         return z_mean_h, std

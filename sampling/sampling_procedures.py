@@ -235,17 +235,8 @@ class EuclideanNormalProcedure(SamplingProcedure[EuclideanNormal, EuclideanNorma
         )
 
     def kl_loss(self, q_z: EuclideanNormal, p_z: EuclideanNormal, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
-        # res = super().kl_loss(q_z, p_z, z, data)
-        log_var_q = torch.nn.Softplus(beta=0.5)(torch.pow(q_z.stddev, 2))
-        log_var_p = torch.nn.Softplus(beta=0.5)(torch.pow(p_z.stddev, 2))
-        res1 = 0.5 * (log_var_p - log_var_q  # log s_p,i^2 / s_q_i^2
-               + torch.exp(log_var_q) / torch.exp(
-                    log_var_p)  # s_q_i^2 / s_p_i^2
-               + torch.pow(q_z.mean - p_z.mean, 2) / torch.exp(
-                    log_var_p)  # (m_p_i - m_q_i)^2 / s_p_i^2
-               - 1)
-        # return res.sum(dim=-1)
-        return res1.sum(dim=-1)
+        res = super().kl_loss(q_z, p_z, z, data)
+        return res.sum(dim=-1)
 
 
 class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNormal]):
