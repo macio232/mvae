@@ -305,13 +305,14 @@ class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNo
 
 class UniversalSamplingProcedure(SamplingProcedure[Q, P]):
 
-    def __init__(self, component,  manifold: Manifold, scalar_parametrization: bool) -> None:
+    def __init__(self, component,  manifold: Manifold, scalar_parametrization: bool,
+                 learn_prior: bool = False) -> None:
         super().__init__(component, manifold, scalar_parametrization)
         self._manifold = manifold
         self._sampling_procedures = {
-            -1: WrappedNormalProcedure(self._manifold._manifolds[-1], scalar_parametrization),
-            0: EuclideanNormalProcedure(self._manifold._manifolds[0], scalar_parametrization),
-            1: WrappedNormalProcedure(self._manifold._manifolds[1], scalar_parametrization),
+            -1: WrappedNormalProcedure(component, self._manifold._manifolds[-1], scalar_parametrization, learn_prior=learn_prior),
+            0: EuclideanNormalProcedure(component, self._manifold._manifolds[0], scalar_parametrization, learn_prior=learn_prior),
+            1: WrappedNormalProcedure(component, self._manifold._manifolds[1], scalar_parametrization, learn_prior=learn_prior),
         }
 
     @property

@@ -21,7 +21,7 @@ from torch.distributions import Distribution
 import torch.nn.functional as F
 
 from ..ops import Manifold, PoincareBall, Hyperboloid, Sphere, StereographicallyProjectedSphere, Euclidean, Universal
-from ..sampling import SamplingProcedure, WrappedNormalProcedure, RiemannianNormalProcedure, EuclideanNormalProcedure
+from ..sampling import SamplingProcedure, WrappedNormalProcedure, RiemannianNormalProcedure, EuclideanNormalProcedure, UniversalSamplingProcedure
 
 Q = TypeVar('Q', bound=Distribution)
 P = TypeVar('P', bound=Distribution)
@@ -51,7 +51,8 @@ class Component(torch.nn.Module):
             if not (
                 self._sampling_procedure_type == WrappedNormalProcedure or
                 self._sampling_procedure_type == RiemannianNormalProcedure or
-                self._sampling_procedure_type == EuclideanNormalProcedure
+                self._sampling_procedure_type == EuclideanNormalProcedure or
+                self._sampling_procedure_type == UniversalSamplingProcedure
             ):
                 raise ValueError(f"Can not learn prior for {self._sampling_procedure_type}")
             else:
