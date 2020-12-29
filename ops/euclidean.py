@@ -75,19 +75,19 @@ def inverse_parallel_transport_mu0(x: Tensor, src: Tensor) -> Tensor:
 
 
 def exp_map(x: Tensor, at_point: Tensor) -> Tensor:
-    return at_point + x / 2
+    return at_point + x
 
 
 def exp_map_mu0(x: Tensor) -> Tensor:
-    return x / 2
+    return x
 
 
 def inverse_exp_map(x: Tensor, at_point: Tensor) -> Tensor:
-    return 2 * (x - at_point)
+    return (x - at_point)
 
 
 def inverse_exp_map_mu0(x: Tensor) -> Tensor:
-    return 2 * x
+    return x
 
 
 def sample_projection_mu0(x: Tensor, at_point: Tensor) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:
