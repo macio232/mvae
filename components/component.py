@@ -47,6 +47,14 @@ class Component(torch.nn.Module):
 
     def init_layers(self, in_dim: int, scalar_parametrization: bool, learn_prior: bool = False) -> None:
         self.manifold = self.create_manifold()
+
+        self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
+
+        if scalar_parametrization:
+            self.fc_logvar = torch.nn.Linear(in_dim, 1)
+        else:
+            self.fc_logvar = torch.nn.Linear(in_dim, self.true_dim)
+
         if learn_prior:
             if not (
                 self._sampling_procedure_type == WrappedNormalProcedure or
@@ -59,13 +67,6 @@ class Component(torch.nn.Module):
                 self.sampling_procedure = self._sampling_procedure_type(self, self.manifold, scalar_parametrization, learn_prior=True)
         else:
             self.sampling_procedure = self._sampling_procedure_type(self, self.manifold, scalar_parametrization)
-
-        self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
-
-        if scalar_parametrization:
-            self.fc_logvar = torch.nn.Linear(in_dim, 1)
-        else:
-            self.fc_logvar = torch.nn.Linear(in_dim, self.true_dim)
 
     @property
     def device(self) -> torch.device:
