@@ -116,16 +116,27 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
             )
         if scalar_parametrization:
             if learn_prior:
-                self._component._std_0 = torch.nn.Parameter(torch.rand((1, 1)).sqrt(), requires_grad=True)
-                self.std_0 = self._component._std_0
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.rand((1, 1)).sqrt(),
+                    requires_grad=True
+                )
             else:
-                self.std_0 = torch.ones((1, 1), device=self._component.device)
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.ones((1, 1)),
+                    requires_grad=False
+                )
         else:
             if learn_prior:
-                self._component._std_0 = torch.nn.Parameter(torch.rand((1, self._component.true_dim)).sqrt(), requires_grad=True)
-                self.std_0 = self._component._std_0
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.rand((1, self._component.true_dim)).sqrt(),
+                    requires_grad=True,
+                )
             else:
-                self.std_0 = torch.ones((1, self._component.true_dim), device=self._component.device)
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.ones((1, self._component.true_dim)),
+                    requires_grad=False,
+                )
+        self.std_0 = self._component._std_0
 
     @property
     def mu_0(self):
@@ -179,10 +190,10 @@ class EuclideanConstantProcedure(SamplingProcedure[EuclideanUniform, EuclideanUn
                  eps: Optional[torch.Tensor] = None) -> None:
         super().__init__(component, manifold, scalar_parametrization)
         if const is None:
-            const = torch.zeros(dim, device=self._component.device)
+            const = torch.zeros(dim)
         self.const = const
         if eps is None:
-            eps = torch.ones(dim, device=self._component.device) * 1e-4
+            eps = torch.ones(dim) * 1e-4
         self.eps = eps
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[EuclideanUniform, EuclideanUniform]:
@@ -205,23 +216,37 @@ class EuclideanNormalProcedure(SamplingProcedure[EuclideanNormal, EuclideanNorma
         if learn_prior:
             self._component._mu_0 = torch.nn.Parameter(
                 torch.rand((1, self._component.true_dim)),
-                requires_grad=True
+                requires_grad=True,
             )
-            self.mu_0 = self._component._mu_0
         else:
-            self.mu_0 = torch.zeros((1, self._component.true_dim), device=self._component.device)
+            self._component._mu_0 = torch.nn.Parameter(
+                torch.zeros((1, self._component.true_dim)),
+                requires_grad=False,
+            )
+        self.mu_0 = self._component._mu_0
         if scalar_parametrization:
             if learn_prior:
-                self._component._std_0 = torch.nn.Parameter(torch.rand((1, 1)).sqrt(), requires_grad=True)
-                self.std_0 = self._component._std_0
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.rand((1, 1)).sqrt(),
+                    requires_grad=True
+                )
             else:
-                self.std_0 = torch.ones((1, 1), device=self._component.device)
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.ones((1, 1)),
+                    requires_grad=False
+                )
         else:
             if learn_prior:
-                self._component._std_0 = torch.nn.Parameter(torch.rand((1, self._component.true_dim)).sqrt(), requires_grad=True)
-                self.std_0 = self._component._std_0
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.rand((1, self._component.true_dim)).sqrt(),
+                    requires_grad=True,
+                )
             else:
-                self.std_0 = torch.ones((1, self._component.true_dim), device=self._component.device)
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.ones((1, self._component.true_dim)),
+                    requires_grad=False,
+                )
+        self.std_0 = self._component._std_0
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[EuclideanNormal, EuclideanNormal]:
         q_z = EuclideanNormal(z_mean, std)
@@ -256,18 +281,26 @@ class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNo
         if scalar_parametrization:
             if learn_prior:
                 self._component._std_0 = torch.nn.Parameter(
-                    torch.rand((1, 1)).sqrt(), requires_grad=True)
-                self.std_0 = self._component._std_0
+                    torch.rand((1, 1)).sqrt(),
+                    requires_grad=True
+                )
             else:
-                self.std_0 = torch.ones((1, 1), device=self._component.device)
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.ones((1, 1)),
+                    requires_grad=False
+                )
         else:
             if learn_prior:
                 self._component._std_0 = torch.nn.Parameter(
                     torch.rand((1, self._component.true_dim)).sqrt(),
-                    requires_grad=True)
-                self.std_0 = self._component._std_0
+                    requires_grad=True,
+                )
             else:
-                self.std_0 = torch.ones((1, self._component.true_dim), device=self._component.device)
+                self._component._std_0 = torch.nn.Parameter(
+                    torch.ones((1, self._component.true_dim)),
+                    requires_grad=False,
+                )
+        self.std_0 = self._component._std_0
 
     @property
     def mu_0(self):
