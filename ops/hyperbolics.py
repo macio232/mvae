@@ -29,7 +29,8 @@ class Hyperboloid(RadiusManifold):
         return exp_map_mu0(expand_proj_dims(x), radius=self.radius)
 
     def exp_map(self, x: Tensor, at_point: Tensor) -> Tensor:
-        return exp_map(expand_proj_dims(x), at_point=at_point, radius=self.radius)
+        return exp_map(expand_proj_dims(x), at_point=at_point,
+                       radius=self.radius)
 
     def inverse_exp_map_mu0(self, x: Tensor) -> Tensor:
         return inverse_exp_map_mu0(x, radius=self.radius)
@@ -43,13 +44,17 @@ class Hyperboloid(RadiusManifold):
     def mu_0(self, shape: torch.Size, **kwargs: Any) -> Tensor:
         return mu_0(shape, radius=self.radius, **kwargs)
 
-    def sample_projection_mu0(self, x: Tensor, at_point: Tensor) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:
+    def sample_projection_mu0(self, x: Tensor, at_point: Tensor) -> Tuple[
+        Tensor, Tuple[Tensor, Tensor]]:
         return sample_projection_mu0(x, at_point, radius=self.radius)
 
-    def inverse_sample_projection_mu0(self, x_proj: Tensor, at_point: Tensor) -> Tuple[Tensor, Tensor]:
-        return inverse_sample_projection_mu0(x_proj, at_point, radius=self.radius)
+    def inverse_sample_projection_mu0(self, x_proj: Tensor, at_point: Tensor) -> \
+    Tuple[Tensor, Tensor]:
+        return inverse_sample_projection_mu0(x_proj, at_point,
+                                             radius=self.radius)
 
-    def logdet(self, mu: Tensor, std: Tensor, z: Tensor, data: Tuple[Tensor, ...]) -> Tensor:
+    def logdet(self, mu: Tensor, std: Tensor, z: Tensor,
+               data: Tuple[Tensor, ...]) -> Tensor:
         u = data[0]
         return _logdet(u, self.radius)
 
@@ -72,7 +77,8 @@ def mu_0(shape: Tuple[int, ...], radius: Tensor, **kwargs: Any) -> Tensor:
     return e_i(i=0, shape=shape, **kwargs) * radius
 
 
-def lorentz_product(x: Tensor, y: Tensor, keepdim: bool = False, dim: int = -1) -> Tensor:
+def lorentz_product(x: Tensor, y: Tensor, keepdim: bool = False,
+                    dim: int = -1) -> Tensor:
     m = x * y
     if keepdim:
         ret = torch.sum(m, dim=dim, keepdim=True) - 2 * m[..., 0:1]
@@ -89,28 +95,50 @@ def lorentz_norm(x: Tensor, **kwargs: Any) -> Tensor:
 
 def parallel_transport_mu0(x: Tensor, dst: Tensor, radius: Tensor) -> Tensor:
     # PT_{mu0 -> dst}(x) = x + <dst, x>_L / (R^2 - <mu0, dst>_L) * (mu0+dst)
-    denom = radius * (radius + dst[..., 0:1])  # lorentz_product(mu0, dst, keepdim=True) which is -dst[0]*radius
+    denom = radius * (radius + dst[...,
+                               0:1])  # lorentz_product(mu0, dst, keepdim=True) which is -dst[0]*radius
     lp = lorentz_product(dst, x, keepdim=True)
     coef = lp / denom
-    right = torch.cat((dst[..., 0:1] + radius, dst[..., 1:]), dim=-1)  # mu0 + dst
+    right = torch.cat((dst[..., 0:1] + radius, dst[..., 1:]),
+                      dim=-1)  # mu0 + dst
     return x + coef * right
 
 
-def inverse_parallel_transport_mu0(x: Tensor, src: Tensor, radius: Tensor) -> Tensor:
+def inverse_parallel_transport_mu0(x: Tensor, src: Tensor,
+                                   radius: Tensor) -> Tensor:
     # PT_{src -> mu0}(x) = x + <mu0, x>_L / (R^2 - <src, mu0>_L) * (src+mu0)
-    denom = (radius + src[..., 0:1])  # lorentz_product(src, mu0, keepdim=True) which is -src[0]*radius
-    lp = -x[..., 0:1]  # lorentz_product(mu0, x, keepdim=True) which is -x[0]*radius
+    denom = (radius + src[...,
+                      0:1])  # lorentz_product(src, mu0, keepdim=True) which is -src[0]*radius
+    lp = -x[...,
+          0:1]  # lorentz_product(mu0, x, keepdim=True) which is -x[0]*radius
     # coef = (lp * radius) / (radius * denom)
     coef = lp / denom
-    right = torch.cat((src[..., 0:1] + radius, src[..., 1:]), dim=-1)  # mu0 + src
+    right = torch.cat((src[..., 0:1] + radius, src[..., 1:]),
+                      dim=-1)  # mu0 + src
     return x + coef * right
 
 
 def exp_map(x: Tensor, at_point: Tensor, radius: Tensor) -> Tensor:
     x_norm = lorentz_norm(x, keepdim=True) / radius
     x_normed = x / x_norm
-    ret = cosh(x_norm) * at_point + sinh(x_norm) * x_normed
-    assert torch.isfinite(ret).all()
+    ret = torch.clamp(
+        torch.clamp(
+            cosh(x_norm) * at_point,
+            min=torch.finfo().min,
+            max=torch.finfo().max
+        ) +
+        torch.clamp(
+            sinh(x_norm) * x_normed,
+            min=torch.finfo().min,
+            max=torch.finfo().max
+        ),
+        min=torch.finfo().min,
+        max=torch.finfo().max
+    )
+    try:
+        assert torch.isfinite(ret).all()
+    except AssertionError:
+        import ipdb; ipdb.set_trace()
     return ret
 
 
@@ -125,27 +153,30 @@ def exp_map_mu0(x: Tensor, radius: Tensor) -> Tensor:
 
 
 def inverse_exp_map(x: Tensor, at_point: Tensor, radius: Tensor) -> Tensor:
-    alpha = -lorentz_product(at_point, x, keepdim=True) / (radius**2)
-    coef = acosh(alpha) / sqrt(alpha**2 - 1)
+    alpha = -lorentz_product(at_point, x, keepdim=True) / (radius ** 2)
+    coef = acosh(alpha) / sqrt(alpha ** 2 - 1)
     ret = coef * (x - alpha * at_point)
     return ret
 
 
 def inverse_exp_map_mu0(x: Tensor, radius: Tensor) -> Tensor:
-    alpha = x[..., 0:1] / radius  # -lorentz_product(x, mu0, keepdim=True) / R^2 .. -<x, mu0>_L = x[0] * R
-    coef = acosh(alpha) / sqrt(alpha**2 - 1.)
+    alpha = x[...,
+            0:1] / radius  # -lorentz_product(x, mu0, keepdim=True) / R^2 .. -<x, mu0>_L = x[0] * R
+    coef = acosh(alpha) / sqrt(alpha ** 2 - 1.)
     diff = torch.cat((x[..., 0:1] - alpha * radius, x[..., 1:]), dim=-1)
     return coef * diff
 
 
-def sample_projection_mu0(x: Tensor, at_point: Tensor, radius: Tensor) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:
+def sample_projection_mu0(x: Tensor, at_point: Tensor, radius: Tensor) -> Tuple[
+    Tensor, Tuple[Tensor, Tensor]]:
     x_expanded = expand_proj_dims(x)
     pt = parallel_transport_mu0(x_expanded, dst=at_point, radius=radius)
     x_proj = exp_map(pt, at_point=at_point, radius=radius)
     return x_proj, (pt, x)
 
 
-def inverse_sample_projection_mu0(x: Tensor, at_point: Tensor, radius: Tensor) -> Tuple[Tensor, Tensor]:
+def inverse_sample_projection_mu0(x: Tensor, at_point: Tensor,
+                                  radius: Tensor) -> Tuple[Tensor, Tensor]:
     unmapped = inverse_exp_map(x, at_point=at_point, radius=radius)
     unpt = inverse_parallel_transport_mu0(unmapped, src=at_point, radius=radius)
     return unmapped, unpt[..., 1:]
