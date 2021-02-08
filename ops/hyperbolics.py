@@ -135,10 +135,7 @@ def exp_map(x: Tensor, at_point: Tensor, radius: Tensor) -> Tensor:
         min=torch.finfo().min,
         max=torch.finfo().max
     )
-    try:
-        assert torch.isfinite(ret).all()
-    except AssertionError:
-        import ipdb; ipdb.set_trace()
+    assert torch.isfinite(ret).all()
     return ret
 
 
