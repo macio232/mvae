@@ -143,7 +143,7 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
         if self.learn_prior:
             return self._manifold.exp_map_mu0(self._component._mu_0)
         else:
-            return self._manifold.mu_0(torch.Size((1, self._component.dim)), device=self._component.device)
+            return self._manifold.mu_0(torch.Size((1, self._component.dim)), device=self.std_0.device)
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[WrappedNormal, WrappedNormal]:
         q_z = WrappedNormal(z_mean, std, manifold=self._manifold)
@@ -307,7 +307,7 @@ class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNo
         if self.learn_prior:
             return self._manifold.exp_map_mu0(self._component._mu_0)
         else:
-            return self._manifold.mu_0(torch.Size((1, self._component.dim)), device=self._component.device)
+            return self._manifold.mu_0(torch.Size((1, self._component.dim)), device=self.std_0.device)
 
     def reparametrize(self, z_mean: Tensor, std: Tensor) -> Tuple[RiemannianNormal, RiemannianNormal]:
         if std.size(-1) > 1:

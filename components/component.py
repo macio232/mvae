@@ -29,8 +29,8 @@ P = TypeVar('P', bound=Distribution)
 
 class Component(torch.nn.Module):
 
-    def forward(self, x: Tensor) -> Tuple[Q, P, Tuple[Tensor, ...]]:
-        z_params = self.encode(x)
+    def forward(self, z_mean: Tensor, z_logvar: Tensor) -> Tuple[Q, P, Tuple[Tensor, ...]]:
+        z_params = self.encode(z_mean, z_logvar)
         q_z, p_z = self.reparametrize(*z_params)
         return q_z, p_z, z_params
 
@@ -45,15 +45,8 @@ class Component(torch.nn.Module):
         self.fc_mean: torch.nn.Linear = None
         self.fc_logvar: torch.nn.Linear = None
 
-    def init_layers(self, in_dim: int, scalar_parametrization: bool, learn_prior: bool = False) -> None:
+    def init_layers(self, scalar_parametrization: bool, learn_prior: bool = False) -> None:
         self.manifold = self.create_manifold()
-
-        self.fc_mean = torch.nn.Linear(in_dim, self.mean_dim)
-
-        if scalar_parametrization:
-            self.fc_logvar = torch.nn.Linear(in_dim, 1)
-        else:
-            self.fc_logvar = torch.nn.Linear(in_dim, self.true_dim)
 
         if learn_prior:
             if not (
@@ -72,13 +65,11 @@ class Component(torch.nn.Module):
     def device(self) -> torch.device:
         return self.fc_mean.weight.device
 
-    def encode(self, x: Tensor) -> Tuple[Tensor, Tensor]:
-        z_mean = self.fc_mean(x)
+    def encode(self, z_mean: Tensor, z_logvar: Tensor) -> Tuple[Tensor, Tensor]:
         assert torch.isfinite(z_mean).all()
         z_mean_h = self.manifold.exp_map_mu0(z_mean)
         assert torch.isfinite(z_mean_h).all()
 
-        z_logvar = self.fc_logvar(x)
         assert torch.isfinite(z_logvar).all()
         # +eps prevents collapse
         std = F.softplus(z_logvar) + 1e-5
