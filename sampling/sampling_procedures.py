@@ -111,7 +111,7 @@ class WrappedNormalProcedure(SamplingProcedure[WrappedNormal, WrappedNormal]):
         self.learn_prior = learn_prior
         if learn_prior:
             self._component._mu_0 = torch.nn.Parameter(
-                torch.rand((1, self._component.true_dim)),
+                torch.randn((1, self._component.true_dim))*5,
                 requires_grad=True
             )
         if scalar_parametrization:
@@ -215,7 +215,7 @@ class EuclideanNormalProcedure(SamplingProcedure[EuclideanNormal, EuclideanNorma
         super().__init__(component, manifold, scalar_parametrization)
         if learn_prior:
             self._component._mu_0 = torch.nn.Parameter(
-                torch.rand((1, self._component.true_dim)),
+                torch.randn((1, self._component.true_dim))*5,
                 requires_grad=True,
             )
         else:
@@ -275,7 +275,7 @@ class RiemannianNormalProcedure(SamplingProcedure[RiemannianNormal, RiemannianNo
         self.learn_prior = learn_prior
         if learn_prior:
             self._component._mu_0 = torch.nn.Parameter(
-                torch.rand((1, self._component.true_dim))*2-1,
+                torch.randn((1, self._component.true_dim))*5,
                 requires_grad=True
             )
         if scalar_parametrization:
